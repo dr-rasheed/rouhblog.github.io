@@ -12,7 +12,7 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
   const location = useLocation();
   const [authors, setAuthors] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>(['تدبر آية', 'لطائف لغوية', 'أسباب النزول', 'مقاصد السور']);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(['السكينة', 'تأملات', 'القرآن', 'لغة', 'إعجاز']);
   
   useEffect(() => {
     const fetchSidebarData = async () => {
@@ -40,10 +40,13 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
       }
     };
     fetchSidebarData();
-  }, [location.pathname]); // Refresh when navigating back to home
+  }, [location.pathname]);
 
   const handleFilter = (type: string, value: string) => {
-    navigate(`/?${type}=${encodeURIComponent(value)}`);
+    navigate({
+      pathname: '/',
+      search: `?${type}=${encodeURIComponent(value)}`
+    });
   };
 
   return (
@@ -94,22 +97,20 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
         </ul>
       </div>
       
-      {tags.length > 0 && (
-        <div className="flex flex-col">
-          <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الأوسمة الشائعة</h3>
-          <div className="flex flex-wrap gap-[8px]">
-            {tags.map((tag, i) => (
-              <span 
-                key={i}
-                onClick={() => handleFilter('tag', tag)}
-                className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px] cursor-pointer hover:border-[var(--color-accent-app)] hover:text-[var(--color-accent-app)] transition-colors"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
+      <div className="flex flex-col">
+        <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الأوسمة الشائعة</h3>
+        <div className="flex flex-wrap gap-[8px]">
+          {tags.map((tag, i) => (
+            <span 
+              key={i}
+              onClick={() => handleFilter('tag', tag)}
+              className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px] cursor-pointer hover:border-[var(--color-accent-app)] hover:text-[var(--color-accent-app)] transition-colors"
+            >
+              #{tag}
+            </span>
+          ))}
         </div>
-      )}
+      </div>
     </aside>
   );
 }
