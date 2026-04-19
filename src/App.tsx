@@ -33,24 +33,41 @@ export default function App() {
     setIsEditingName(false);
     if (!user || !newName || newName === user.displayName) return;
     
+    const oldName = user.displayName || '';
     setUpdatingPosts(true);
     try {
       await updateProfile(user, { displayName: newName });
       
       // Update all previous posts by this user
-      const q = query(collection(db, 'posts'), where('authorId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      const updatedRefs = new Set<string>();
+
+      // Query by authorId
+      const q1 = query(collection(db, 'posts'), where('authorId', '==', user.uid));
+      const snap1 = await getDocs(q1);
+      snap1.forEach((docSnapshot) => {
+        batch.update(docSnapshot.ref, { authorName: newName });
+        updatedRefs.add(docSnapshot.id);
+      });
       
-      if (!querySnapshot.empty) {
-        const batch = writeBatch(db);
-        querySnapshot.forEach((docSnapshot) => {
-          batch.update(docSnapshot.ref, { authorName: newName });
+      // Fallback: Query by old name for older posts missing authorId
+      if (oldName) {
+        const q2 = query(collection(db, 'posts'), where('authorName', '==', oldName));
+        const snap2 = await getDocs(q2);
+        snap2.forEach((docSnapshot) => {
+          if (!updatedRefs.has(docSnapshot.id)) {
+            const data = docSnapshot.data();
+            if (!data.authorId || data.authorId === user.uid) {
+              batch.update(docSnapshot.ref, { authorName: newName });
+              updatedRefs.add(docSnapshot.id);
+            }
+          }
         });
+      }
+
+      if (updatedRefs.size > 0) {
         await batch.commit();
       }
-      
-      // Reload the page to reflect the new name in Sidebar and Home
-      window.location.reload();
     } catch (error) {
       console.error("Error updating profile or posts", error);
     } finally {

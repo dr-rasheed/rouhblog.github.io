@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { useEffect, useState, useMemo } from 'react';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -17,7 +17,7 @@ interface Post {
 }
 
 export default function Home() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -26,36 +26,29 @@ export default function Home() {
   const tagFilter = searchParams.get('tag');
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        let fetchedPosts: Post[] = [];
-        querySnapshot.forEach((doc) => {
-          fetchedPosts.push({ id: doc.id, ...doc.data() } as Post);
-        });
-        
-        // Appy local filters
-        if (authorFilter) {
-          fetchedPosts = fetchedPosts.filter(p => p.authorName === authorFilter);
-        }
-        if (catFilter) {
-          fetchedPosts = fetchedPosts.filter(p => p.category === catFilter);
-        }
-        if (tagFilter) {
-          fetchedPosts = fetchedPosts.filter(p => p.tags?.includes(tagFilter));
-        }
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedPosts: Post[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedPosts.push({ id: doc.id, ...doc.data() } as Post);
+      });
+      setAllPosts(fetchedPosts);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching posts:", error);
+      setLoading(false);
+    });
 
-        setPosts(fetchedPosts);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    return () => unsubscribe();
+  }, []);
 
-    fetchPosts();
-  }, [authorFilter, catFilter, tagFilter]);
+  const posts = useMemo(() => {
+    let p = allPosts;
+    if (authorFilter) p = p.filter(x => x.authorName === authorFilter);
+    if (catFilter) p = p.filter(x => x.category === catFilter);
+    if (tagFilter) p = p.filter(x => x.tags?.includes(tagFilter));
+    return p;
+  }, [allPosts, authorFilter, catFilter, tagFilter]);
 
   const clearFilters = () => {
     setSearchParams({});

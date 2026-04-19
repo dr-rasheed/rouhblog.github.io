@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 interface SidebarProps {
@@ -9,38 +9,35 @@ interface SidebarProps {
 
 export default function Sidebar({ isAllowed }: SidebarProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const [authors, setAuthors] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>(['تدبر آية', 'لطائف لغوية', 'أسباب النزول', 'مقاصد السور']);
   const [tags, setTags] = useState<string[]>(['السكينة', 'تأملات', 'القرآن', 'لغة', 'إعجاز']);
   
   useEffect(() => {
-    const fetchSidebarData = async () => {
-      try {
-        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
-        const snap = await getDocs(q);
-        const auths = new Set<string>();
-        const tgs = new Set<string>();
-        const cats = new Set<string>();
-        
-        snap.forEach(doc => {
-          const data = doc.data();
-          if (data.authorName) auths.add(data.authorName);
-          if (data.category) cats.add(data.category);
-          if (data.tags && Array.isArray(data.tags)) {
-            data.tags.forEach((t: string) => tgs.add(t));
-          }
-        });
-        
-        if (auths.size > 0) setAuthors(Array.from(auths));
-        if (cats.size > 0) setCategories(Array.from(cats));
-        if (tgs.size > 0) setTags(Array.from(tgs).slice(0, 15));
-      } catch (error) {
-        console.error("Error fetching sidebar data:", error);
-      }
-    };
-    fetchSidebarData();
-  }, [location.pathname]);
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const auths = new Set<string>();
+      const tgs = new Set<string>();
+      const cats = new Set<string>();
+      
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (data.authorName) auths.add(data.authorName);
+        if (data.category) cats.add(data.category);
+        if (data.tags && Array.isArray(data.tags)) {
+          data.tags.forEach((t: string) => tgs.add(t));
+        }
+      });
+      
+      setAuthors(Array.from(auths));
+      if (cats.size > 0) setCategories(Array.from(cats));
+      if (tgs.size > 0) setTags(Array.from(tgs).slice(0, 15));
+    }, (error) => {
+      console.error("Error fetching sidebar data:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleFilter = (type: string, value: string) => {
     navigate({
