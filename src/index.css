@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bg-base: #fdfcf8;
+  --color-primary-app: #2d3e50;
+  --color-accent-app: #8c7b5d;
+  --color-border-app: #e0ddd5;
+  --color-text-main: #333333;
+  --color-sidebar-bg: #f5f2eb;
+}
+
+body {
+  font-family: 'Times New Roman', Times, serif, Arial;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-main);
+  direction: rtl; /* RTL for Arabic */
+}
+
+/* React Quill styling overrides for new theme */
+.quill {
+  direction: rtl;
+  text-align: right;
+  background: white;
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ql-toolbar {
+  background: #fafafa;
+  padding: 10px 20px !important;
+  border-bottom: 1px solid var(--color-border-app) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  display: flex;
+  gap: 15px;
+}
+
+.ql-container {
+  border: none !important;
+  flex: 1;
+  font-family: 'Times New Roman', Times, serif, Arial;
+  font-size: 18px;
+}
+
+.ql-editor {
+  padding: 25px !important;
+  min-height: 200px;
+  line-height: 1.8;
+  color: var(--color-text-main);
+}
+
+.ql-editor.ql-blank::before {
+  font-style: normal !important;
+  left: unset !important;
+  right: 25px !important;
+  color: #999;
+}
+

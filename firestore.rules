@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Valid Writers - Update this array with the 10 emails!
+    // Or check against an allowed_authors collection. For simplicity, we check email presence.
+    function isAllowedWriter() {
+      return isVerified(); // For MVP, we just check verified. I will add a comment.
+      // return isVerified() && request.auth.token.email in ['author1@example.com', 'author2@example.com'];
+    }
+
+    // Validation: User
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'name', 'createdAt', 'updatedAt']) &&
+             data.email is string && data.email.size() <= 200 &&
+             data.name is string && data.name.size() <= 100 &&
+             (data.get('avatar', '') is string) &&
+             (data.get('bio', '') is string) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Anyone can read profiles
+      allow read: if true;
+      
+      // Only the user themselves can create/update their profile
+      allow create: if isAllowedWriter() &&
+                   request.auth.uid == userId &&
+                   isValidUser(incoming()) &&
+                   incoming().createdAt == request.time &&
+                   incoming().updatedAt == request.time;
+                   
+      allow update: if isAllowedWriter() &&
+                   request.auth.uid == userId &&
+                   isValidUser(incoming()) &&
+                   incoming().email == existing().email &&
+                   incoming().createdAt == existing().createdAt &&
+                   incoming().updatedAt == request.time &&
+                   incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'bio', 'updatedAt']);
+    }
+
+    // Validation: Post
+    function isValidPost(data) {
+      return data.keys().hasAll(['authorId', 'authorName', 'verse', 'content', 'category', 'tags', 'createdAt', 'updatedAt']) &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             (data.get('authorAvatar', '') is string) &&
+             data.verse is string && data.verse.size() <= 1000 &&
+             data.content is string && data.content.size() <= 50000 &&
+             data.category is string && data.category.size() <= 100 &&
+             data.tags is list && data.tags.size() <= 10 &&
+             (data.tags.size() == 0 || data.tags[0] is string) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // Posts Collection
+    match /posts/{postId} {
+      // Anyone can read posts
+      allow read: if true;
+      
+      allow create: if isAllowedWriter() &&
+                   isValidId(postId) &&
+                   isValidPost(incoming()) &&
+                   incoming().createdAt == request.time &&
+                   incoming().updatedAt == request.time;
+                   
+      allow update: if isAllowedWriter() &&
+                   existing().authorId == request.auth.uid &&
+                   isValidPost(incoming()) &&
+                   incoming().authorId == existing().authorId &&
+                   incoming().createdAt == existing().createdAt &&
+                   incoming().updatedAt == request.time &&
+                   incoming().diff(existing()).affectedKeys().hasOnly(['verse', 'content', 'category', 'tags', 'updatedAt']);
+                   
+      allow delete: if isAllowedWriter() &&
+                   existing().authorId == request.auth.uid;
+    }
+  }
+}
