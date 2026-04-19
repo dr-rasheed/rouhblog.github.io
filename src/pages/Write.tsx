@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { User } from 'firebase/auth';
+import TipTapEditor from '../components/TipTapEditor';
 
 interface WriteProps {
   user: User | null;
@@ -29,15 +30,12 @@ export default function Write({ user, isAllowed }: WriteProps) {
     try {
       const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
       
-      // Convert newlines to simple HTML paragraphs so it renders well in dangerouslySetInnerHTML
-      const htmlContent = content.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '<br/>').join('');
-
       await addDoc(collection(db, 'posts'), {
         authorId: user.uid,
         authorName: user.displayName || 'كاتب مجهول',
         authorAvatar: user.photoURL || '',
         verse,
-        content: htmlContent,
+        content: content,
         category,
         tags,
         createdAt: serverTimestamp(),
@@ -65,12 +63,11 @@ export default function Write({ user, isAllowed }: WriteProps) {
         />
       </div>
 
-      <div className="flex-1 p-[20px]">
-        <textarea
+      <div className="flex-1 p-[20px] overflow-hidden flex flex-col h-full min-h-[400px]">
+        <TipTapEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
           placeholder="ابدأ بكتابة تدبرك وتأملاتك العميقة هنا..."
-          className="w-full h-full min-h-[300px] border-none outline-none resize-none text-[16px] leading-[1.8] text-[var(--color-text-main)]"
         />
       </div>
 

@@ -11,6 +11,7 @@ import { auth, signIn, logOut, ALLOWED_EMAILS } from './lib/firebase';
 import Home from './pages/Home';
 import Write from './pages/Write';
 import PostView from './pages/PostView';
+import Sidebar from './components/Sidebar';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -70,54 +71,7 @@ export default function App() {
 
         {/* Main Container */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="w-[260px] bg-[var(--color-sidebar-bg)] border-l border-[var(--color-border-app)] p-[25px] flex flex-col gap-[30px] overflow-y-auto shrink-0">
-             <div className="flex flex-col">
-               <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">روابط سريعة</h3>
-               <ul className="list-none flex flex-col">
-                 <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">
-                   <Link to="/" className="w-full block">الرئيسية</Link>
-                 </li>
-                 {isAllowed && (
-                   <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">
-                     <Link to="/write" className="w-full block">إضافة تدوينة</Link>
-                   </li>
-                 )}
-               </ul>
-             </div>
-             
-             <div className="flex flex-col">
-                <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الكتاب الـ 10</h3>
-                <ul className="list-none flex flex-col">
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">د. أحمد العلوي</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">أ. سارة محمود</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">د. يوسف خالد</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">م. نورة فيصل</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">أ. عمر حسن</li>
-                </ul>
-             </div>
-
-             <div className="flex flex-col">
-                <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">التصنيفات</h3>
-                <ul className="list-none flex flex-col">
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">تدبر آية</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">لطائف لغوية</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">أسباب النزول</li>
-                  <li className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors">مقاصد السور</li>
-                </ul>
-             </div>
-             
-             <div className="flex flex-col">
-                <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الأوسمة الشائعة</h3>
-                <div className="flex flex-wrap gap-[8px]">
-                  <span className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px]">#السكينة</span>
-                  <span className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px]">#تأملات</span>
-                  <span className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px]">#القرآن</span>
-                  <span className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px]">#لغة</span>
-                  <span className="bg-white border border-[var(--color-border-app)] px-[10px] py-[4px] rounded-[4px] text-[12px]">#إعجاز</span>
-                </div>
-             </div>
-          </aside>
+          <Sidebar isAllowed={isAllowed} />
 
           {/* Main Content Area */}
           <main className="flex-1 p-[40px] flex flex-col gap-[20px] bg-[var(--color-bg-base)] overflow-y-auto">

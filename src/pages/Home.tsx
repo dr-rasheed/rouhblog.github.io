@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -19,16 +19,33 @@ interface Post {
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const authorFilter = searchParams.get('author');
+  const catFilter = searchParams.get('category');
+  const tagFilter = searchParams.get('tag');
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const fetchedPosts: Post[] = [];
+        let fetchedPosts: Post[] = [];
         querySnapshot.forEach((doc) => {
           fetchedPosts.push({ id: doc.id, ...doc.data() } as Post);
         });
+        
+        // Appy local filters
+        if (authorFilter) {
+          fetchedPosts = fetchedPosts.filter(p => p.authorName === authorFilter);
+        }
+        if (catFilter) {
+          fetchedPosts = fetchedPosts.filter(p => p.category === catFilter);
+        }
+        if (tagFilter) {
+          fetchedPosts = fetchedPosts.filter(p => p.tags?.includes(tagFilter));
+        }
+
         setPosts(fetchedPosts);
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -38,16 +55,39 @@ export default function Home() {
     };
 
     fetchPosts();
-  }, []);
+  }, [authorFilter, catFilter, tagFilter]);
+
+  const clearFilters = () => {
+    setSearchParams({});
+  };
 
   if (loading) {
     return <div className="text-center py-20 text-[18px]">جاري تحميل التدوينات...</div>;
   }
 
+  const hasFilters = authorFilter || catFilter || tagFilter;
+
   return (
     <div className="flex flex-col gap-[20px]">
+      {hasFilters && (
+        <div className="bg-white border border-[var(--color-border-app)] p-[15px] rounded-[8px] flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-[10px] text-[15px]">
+            <span className="text-gray-500">تصفية حسب:</span>
+            {authorFilter && <span className="font-bold text-[var(--color-primary-app)]">الكاتب ({authorFilter})</span>}
+            {catFilter && <span className="font-bold text-[var(--color-primary-app)]">التصنيف ({catFilter})</span>}
+            {tagFilter && <span className="font-bold text-[var(--color-primary-app)]">الوسم (#{tagFilter})</span>}
+          </div>
+          <button 
+            onClick={clearFilters}
+            className="text-[13px] text-[var(--color-accent-app)] hover:underline"
+          >
+            إلغاء التصفية
+          </button>
+        </div>
+      )}
+
       {posts.length === 0 ? (
-        <div className="text-center py-20 text-[var(--color-primary-app)] text-[18px]">لا توجد تدوينات بعد.</div>
+        <div className="text-center py-20 text-[var(--color-primary-app)] text-[18px]">لا توجد تدوينات مطابقة.</div>
       ) : (
         posts.map((post) => (
           <article key={post.id} className="bg-white border border-[var(--color-border-app)] rounded-[8px] p-[25px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col gap-[15px]">
