@@ -21,7 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const authorFilter = searchParams.get('author');
+  const authorIdFilter = searchParams.get('authorId');
   const catFilter = searchParams.get('category');
   const tagFilter = searchParams.get('tag');
 
@@ -42,13 +42,19 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  const displayAuthorName = useMemo(() => {
+    if (!authorIdFilter) return null;
+    const post = allPosts.find(p => p.authorId === authorIdFilter);
+    return post ? post.authorName : 'الكاتب';
+  }, [allPosts, authorIdFilter]);
+
   const posts = useMemo(() => {
     let p = allPosts;
-    if (authorFilter) p = p.filter(x => x.authorName === authorFilter);
+    if (authorIdFilter) p = p.filter(x => x.authorId === authorIdFilter);
     if (catFilter) p = p.filter(x => x.category === catFilter);
     if (tagFilter) p = p.filter(x => x.tags?.includes(tagFilter));
     return p;
-  }, [allPosts, authorFilter, catFilter, tagFilter]);
+  }, [allPosts, authorIdFilter, catFilter, tagFilter]);
 
   const clearFilters = () => {
     setSearchParams({});
@@ -58,7 +64,7 @@ export default function Home() {
     return <div className="text-center py-20 text-[18px]">جاري تحميل التدوينات...</div>;
   }
 
-  const hasFilters = authorFilter || catFilter || tagFilter;
+  const hasFilters = authorIdFilter || catFilter || tagFilter;
 
   return (
     <div className="flex flex-col gap-[20px]">
@@ -66,7 +72,7 @@ export default function Home() {
         <div className="bg-white border border-[var(--color-border-app)] p-[15px] rounded-[8px] flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-[10px] text-[15px]">
             <span className="text-gray-500">تصفية حسب:</span>
-            {authorFilter && <span className="font-bold text-[var(--color-primary-app)]">الكاتب ({authorFilter})</span>}
+            {authorIdFilter && <span className="font-bold text-[var(--color-primary-app)]">الكاتب ({displayAuthorName})</span>}
             {catFilter && <span className="font-bold text-[var(--color-primary-app)]">التصنيف ({catFilter})</span>}
             {tagFilter && <span className="font-bold text-[var(--color-primary-app)]">الوسم (#{tagFilter})</span>}
           </div>

@@ -9,27 +9,29 @@ interface SidebarProps {
 
 export default function Sidebar({ isAllowed }: SidebarProps) {
   const navigate = useNavigate();
-  const [authors, setAuthors] = useState<string[]>([]);
+  const [authors, setAuthors] = useState<Map<string, string>>(new Map());
   const [categories, setCategories] = useState<string[]>(['تدبر آية', 'لطائف لغوية', 'أسباب النزول', 'مقاصد السور']);
   const [tags, setTags] = useState<string[]>(['السكينة', 'تأملات', 'القرآن', 'لغة', 'إعجاز']);
   
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
     const unsubscribe = onSnapshot(q, (snap) => {
-      const auths = new Set<string>();
+      const auths = new Map<string, string>();
       const tgs = new Set<string>();
       const cats = new Set<string>();
       
       snap.forEach(doc => {
         const data = doc.data();
-        if (data.authorName) auths.add(data.authorName);
+        if (data.authorId && data.authorName) {
+          auths.set(data.authorId, data.authorName);
+        }
         if (data.category) cats.add(data.category);
         if (data.tags && Array.isArray(data.tags)) {
           data.tags.forEach((t: string) => tgs.add(t));
         }
       });
       
-      setAuthors(Array.from(auths));
+      setAuthors(auths);
       if (cats.size > 0) setCategories(Array.from(cats));
       if (tgs.size > 0) setTags(Array.from(tgs).slice(0, 15));
     }, (error) => {
@@ -62,17 +64,17 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
         </ul>
       </div>
       
-      {authors.length > 0 && (
+      {authors.size > 0 && (
         <div className="flex flex-col">
           <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الكُتّاب المعتمدين</h3>
           <ul className="list-none flex flex-col">
-            {authors.map((author, i) => (
+            {Array.from(authors.entries()).map(([id, name], i) => (
               <li 
                 key={i} 
-                onClick={() => handleFilter('author', author)}
+                onClick={() => handleFilter('authorId', id)}
                 className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors"
               >
-                {author}
+                {name}
               </li>
             ))}
           </ul>
