@@ -6,7 +6,8 @@
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User, updateProfile } from 'firebase/auth';
-import { auth, signIn, logOut, ALLOWED_EMAILS } from './lib/firebase';
+import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { auth, signIn, logOut, ALLOWED_EMAILS, db } from './lib/firebase';
 
 import Home from './pages/Home';
 import Write from './pages/Write';
@@ -19,7 +20,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editableName, setEditableName] = useState('');
-  const [userVersion, setUserVersion] = useState(0);
+  const [updatingPosts, setUpdatingPosts] = useState(false);
 
   const handleNameClick = () => {
     if (!user) return;
@@ -32,11 +33,28 @@ export default function App() {
     setIsEditingName(false);
     if (!user || !newName || newName === user.displayName) return;
     
+    setUpdatingPosts(true);
     try {
       await updateProfile(user, { displayName: newName });
-      setUserVersion(v => v + 1); // Trigger UI re-render
+      
+      // Update all previous posts by this user
+      const q = query(collection(db, 'posts'), where('authorId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const batch = writeBatch(db);
+        querySnapshot.forEach((docSnapshot) => {
+          batch.update(docSnapshot.ref, { authorName: newName });
+        });
+        await batch.commit();
+      }
+      
+      // Reload the page to reflect the new name in Sidebar and Home
+      window.location.reload();
     } catch (error) {
-      console.error("Error updating profile", error);
+      console.error("Error updating profile or posts", error);
+    } finally {
+      setUpdatingPosts(false);
     }
   };
 
@@ -68,7 +86,9 @@ export default function App() {
           <div className="flex items-center gap-[15px] text-[14px] text-[var(--color-accent-app)]">
             {user ? (
               <>
-                {isEditingName ? (
+                {updatingPosts ? (
+                  <span className="text-[14px]">جاري تحديث الاسم...</span>
+                ) : isEditingName ? (
                   <input
                     type="text"
                     value={editableName}
@@ -76,6 +96,7 @@ export default function App() {
                     onBlur={handleNameSave}
                     onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
                     autoFocus
+                    disabled={updatingPosts}
                     className="px-[8px] py-[2px] border border-[var(--color-accent-app)] rounded outline-none text-[14px] text-[var(--color-primary-app)]"
                     placeholder="اسمك المعروض..."
                   />
