@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { User } from 'firebase/auth';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 
 interface WriteProps {
   user: User | null;
@@ -30,12 +28,16 @@ export default function Write({ user, isAllowed }: WriteProps) {
     setSaving(true);
     try {
       const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+      
+      // Convert newlines to simple HTML paragraphs so it renders well in dangerouslySetInnerHTML
+      const htmlContent = content.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '<br/>').join('');
+
       await addDoc(collection(db, 'posts'), {
         authorId: user.uid,
         authorName: user.displayName || 'كاتب مجهول',
         authorAvatar: user.photoURL || '',
         verse,
-        content,
+        content: htmlContent,
         category,
         tags,
         createdAt: serverTimestamp(),
@@ -50,19 +52,6 @@ export default function Write({ user, isAllowed }: WriteProps) {
     }
   };
 
-  const modules = {
-    toolbar: [
-      ['bold', 'italic'],
-      ['link'],
-      ['blockquote'],
-      [{'list': 'bullet'}, {'list': 'ordered'}]
-    ],
-  };
-
-  const formats = [
-    'bold', 'italic', 'link', 'blockquote', 'list', 'bullet'
-  ];
-
   return (
     <div className="bg-white border border-[var(--color-border-app)] rounded-[8px] flex-1 flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.02)] min-h-[500px]">
       <div className="p-[20px] border-b border-[var(--color-border-app)]">
@@ -76,14 +65,14 @@ export default function Write({ user, isAllowed }: WriteProps) {
         />
       </div>
 
-      <ReactQuill 
-        theme="snow" 
-        value={content} 
-        onChange={setContent} 
-        modules={modules}
-        formats={formats}
-        placeholder="ابدأ بكتابة تدبرك وتأملاتك العميقة..."
-      />
+      <div className="flex-1 p-[20px]">
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="ابدأ بكتابة تدبرك وتأملاتك العميقة هنا..."
+          className="w-full h-full min-h-[300px] border-none outline-none resize-none text-[16px] leading-[1.8] text-[var(--color-text-main)]"
+        />
+      </div>
 
       <div className="p-[15px_25px] border-t border-[var(--color-border-app)] flex justify-between items-center bg-white rounded-b-[8px]">
         <div className="flex gap-4 items-center">
