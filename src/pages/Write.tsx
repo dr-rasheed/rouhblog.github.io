@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, updateProfile } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import TipTapEditor from '../components/TipTapEditor';
 
 interface WriteProps {
@@ -16,7 +16,6 @@ export default function Write({ user, isAllowed }: WriteProps) {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('تدبر آية');
   const [tagsInput, setTagsInput] = useState('');
-  const [authorName, setAuthorName] = useState(user?.displayName || 'كاتب');
   const [saving, setSaving] = useState(false);
 
   if (!user || !isAllowed) {
@@ -25,20 +24,15 @@ export default function Write({ user, isAllowed }: WriteProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!verse || !content || !category || !authorName) return;
+    if (!verse || !content || !category) return;
     
     setSaving(true);
     try {
-      // Update Firebase profile so the name sticks for future posts
-      if (authorName !== user.displayName) {
-        await updateProfile(user, { displayName: authorName }).catch(console.error);
-      }
-
       const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
       
       await addDoc(collection(db, 'posts'), {
         authorId: user.uid,
-        authorName: authorName,
+        authorName: user.displayName || 'كاتب مجهول',
         authorAvatar: user.photoURL || '',
         verse,
         content: content,
@@ -77,17 +71,8 @@ export default function Write({ user, isAllowed }: WriteProps) {
         />
       </div>
 
-      <div className="p-[15px_25px] border-t border-[var(--color-border-app)] flex flex-wrap justify-between items-center bg-white rounded-b-[8px] gap-[15px]">
-        <div className="flex flex-wrap gap-4 items-center">
-          <input 
-            type="text" 
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            className="p-[8px] border border-[var(--color-border-app)] rounded-[4px] text-[14px] bg-white outline-none w-[150px]"
-            title="الاسم المعروض ككاتب"
-            placeholder="اسم الكاتب..."
-          />
-
+      <div className="p-[15px_25px] border-t border-[var(--color-border-app)] flex justify-between items-center bg-white rounded-b-[8px]">
+        <div className="flex gap-4 items-center">
           <select 
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -110,7 +95,7 @@ export default function Write({ user, isAllowed }: WriteProps) {
         </div>
         <button 
           onClick={handleSubmit} 
-          disabled={saving || !verse || !content || !category || !authorName}
+          disabled={saving || !verse || !content || !category}
           className="bg-[var(--color-primary-app)] text-white border-none py-[10px] px-[30px] rounded-[4px] font-bold cursor-pointer text-[16px] disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           {saving ? 'جاري النشر...' : 'نشر التدوينة'}

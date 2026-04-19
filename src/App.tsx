@@ -5,7 +5,7 @@
 
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, updateProfile } from 'firebase/auth';
 import { auth, signIn, logOut, ALLOWED_EMAILS } from './lib/firebase';
 
 import Home from './pages/Home';
@@ -17,6 +17,28 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAllowed, setIsAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editableName, setEditableName] = useState('');
+  const [userVersion, setUserVersion] = useState(0);
+
+  const handleNameClick = () => {
+    if (!user) return;
+    setEditableName(user.displayName || user.email || '');
+    setIsEditingName(true);
+  };
+
+  const handleNameSave = async () => {
+    const newName = editableName.trim();
+    setIsEditingName(false);
+    if (!user || !newName || newName === user.displayName) return;
+    
+    try {
+      await updateProfile(user, { displayName: newName });
+      setUserVersion(v => v + 1); // Trigger UI re-render
+    } catch (error) {
+      console.error("Error updating profile", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -46,7 +68,26 @@ export default function App() {
           <div className="flex items-center gap-[15px] text-[14px] text-[var(--color-accent-app)]">
             {user ? (
               <>
-                <span>مرحباً، {user.displayName || user.email}</span>
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={editableName}
+                    onChange={(e) => setEditableName(e.target.value)}
+                    onBlur={handleNameSave}
+                    onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
+                    autoFocus
+                    className="px-[8px] py-[2px] border border-[var(--color-accent-app)] rounded outline-none text-[14px] text-[var(--color-primary-app)]"
+                    placeholder="اسمك المعروض..."
+                  />
+                ) : (
+                  <span 
+                    onClick={handleNameClick} 
+                    title="انقر لتعديل اسمك المعروض"
+                    className="cursor-pointer hover:underline decoration-dashed underline-offset-4"
+                  >
+                    مرحباً، {user.displayName || user.email}
+                  </span>
+                )}
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName || "User"} className="w-[35px] h-[35px] rounded-full object-cover bg-[#ddd]" />
                 ) : (
