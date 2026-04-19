@@ -12,68 +12,14 @@ import { auth, signIn, logOut, ALLOWED_EMAILS, db } from './lib/firebase';
 import Home from './pages/Home';
 import Write from './pages/Write';
 import PostView from './pages/PostView';
+import Profile from './pages/Profile';
+import EditPost from './pages/EditPost';
 import Sidebar from './components/Sidebar';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAllowed, setIsAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editableName, setEditableName] = useState('');
-  const [updatingPosts, setUpdatingPosts] = useState(false);
-
-  const handleNameClick = () => {
-    if (!user) return;
-    setEditableName(user.displayName || user.email || '');
-    setIsEditingName(true);
-  };
-
-  const handleNameSave = async () => {
-    const newName = editableName.trim();
-    setIsEditingName(false);
-    if (!user || !newName || newName === user.displayName) return;
-    
-    const oldName = user.displayName || '';
-    setUpdatingPosts(true);
-    try {
-      await updateProfile(user, { displayName: newName });
-      
-      // Update all previous posts by this user
-      const batch = writeBatch(db);
-      const updatedRefs = new Set<string>();
-
-      const snapAll = await getDocs(collection(db, 'posts'));
-      snapAll.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        
-        // Identify if this post belongs to the current user
-        const isMatch = 
-          data.authorId === user.uid || 
-          !data.authorId || // Orphaned posts from earlier version
-          (oldName && data.authorName === oldName) ||
-          data.authorName === user.email;
-
-        if (isMatch) {
-          batch.update(docSnapshot.ref, { 
-            authorName: newName,
-            authorId: user.uid // Heal missing IDs
-          });
-          updatedRefs.add(docSnapshot.id);
-        }
-      });
-
-      if (updatedRefs.size > 0) {
-        await batch.commit();
-      }
-      
-      // Reload is removed since Home/Sidebar are real-time, but we can safely let React re-render.
-    } catch (error) {
-      console.error("Error updating profile or posts", error);
-    } finally {
-      setUpdatingPosts(false);
-      window.location.reload(); // Hard reload just to update the header
-    }
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -103,34 +49,19 @@ export default function App() {
           <div className="flex items-center gap-[15px] text-[14px] text-[var(--color-accent-app)]">
             {user ? (
               <>
-                {updatingPosts ? (
-                  <span className="text-[14px]">جاري تحديث الاسم...</span>
-                ) : isEditingName ? (
-                  <input
-                    type="text"
-                    value={editableName}
-                    onChange={(e) => setEditableName(e.target.value)}
-                    onBlur={handleNameSave}
-                    onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
-                    autoFocus
-                    disabled={updatingPosts}
-                    className="px-[8px] py-[2px] border border-[var(--color-accent-app)] rounded outline-none text-[14px] text-[var(--color-primary-app)]"
-                    placeholder="اسمك المعروض..."
-                  />
-                ) : (
-                  <span 
-                    onClick={handleNameClick} 
-                    title="انقر لتعديل اسمك المعروض"
-                    className="cursor-pointer hover:underline decoration-dashed underline-offset-4"
-                  >
+                <Link to="/profile" className="flex items-center gap-[10px] hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors" title="إدارة حسابي وتدويناتي">
+                  <span className="font-medium">
                     مرحباً، {user.displayName || user.email}
                   </span>
-                )}
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || "User"} className="w-[35px] h-[35px] rounded-full object-cover bg-[#ddd]" />
-                ) : (
-                  <div className="w-[35px] h-[35px] bg-[#ddd] rounded-full"></div>
-                )}
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-[35px] h-[35px] rounded-full object-cover bg-[#ddd]" />
+                  ) : (
+                    <div className="w-[35px] h-[35px] bg-[#ddd] rounded-full flex items-center justify-center font-bold text-gray-500">
+                      {user.displayName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </Link>
+                
                 {isAllowed && (
                   <Link to="/write" className="mr-4 px-[10px] py-[4px] border border-[var(--color-accent-app)] rounded text-[var(--color-accent-app)] hover:bg-[var(--color-accent-app)] hover:text-white transition-colors">
                     اكتب تدبراً
@@ -158,6 +89,8 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/post/:id" element={<PostView />} />
               <Route path="/write" element={<Write user={user} isAllowed={isAllowed} />} />
+              <Route path="/edit/:id" element={<EditPost user={user} isAllowed={isAllowed} />} />
+              <Route path="/profile" element={<Profile user={user} isAllowed={isAllowed} />} />
             </Routes>
           </main>
         </div>
