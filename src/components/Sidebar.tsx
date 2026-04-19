@@ -23,7 +23,14 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
       snap.forEach(doc => {
         const data = doc.data();
         if (data.authorId && data.authorName) {
-          auths.set(data.authorId, data.authorName);
+          if (!auths.has(data.authorId)) {
+            auths.set(data.authorId, data.authorName);
+          }
+        } else if (data.authorName && !data.authorId) {
+           // Fallback for extremely old posts without authorId
+           if (!auths.has(data.authorName)) {
+             auths.set(data.authorName, data.authorName);
+           }
         }
         if (data.category) cats.add(data.category);
         if (data.tags && Array.isArray(data.tags)) {
