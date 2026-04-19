@@ -42,36 +42,36 @@ export default function App() {
       const batch = writeBatch(db);
       const updatedRefs = new Set<string>();
 
-      // Query by authorId
-      const q1 = query(collection(db, 'posts'), where('authorId', '==', user.uid));
-      const snap1 = await getDocs(q1);
-      snap1.forEach((docSnapshot) => {
-        batch.update(docSnapshot.ref, { authorName: newName });
-        updatedRefs.add(docSnapshot.id);
+      const snapAll = await getDocs(collection(db, 'posts'));
+      snapAll.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        
+        // Identify if this post belongs to the current user
+        const isMatch = 
+          data.authorId === user.uid || 
+          !data.authorId || // Orphaned posts from earlier version
+          (oldName && data.authorName === oldName) ||
+          data.authorName === user.email;
+
+        if (isMatch) {
+          batch.update(docSnapshot.ref, { 
+            authorName: newName,
+            authorId: user.uid // Heal missing IDs
+          });
+          updatedRefs.add(docSnapshot.id);
+        }
       });
-      
-      // Fallback: Query by old name for older posts missing authorId
-      if (oldName) {
-        const q2 = query(collection(db, 'posts'), where('authorName', '==', oldName));
-        const snap2 = await getDocs(q2);
-        snap2.forEach((docSnapshot) => {
-          if (!updatedRefs.has(docSnapshot.id)) {
-            const data = docSnapshot.data();
-            if (!data.authorId || data.authorId === user.uid) {
-              batch.update(docSnapshot.ref, { authorName: newName });
-              updatedRefs.add(docSnapshot.id);
-            }
-          }
-        });
-      }
 
       if (updatedRefs.size > 0) {
         await batch.commit();
       }
+      
+      // Reload is removed since Home/Sidebar are real-time, but we can safely let React re-render.
     } catch (error) {
       console.error("Error updating profile or posts", error);
     } finally {
       setUpdatingPosts(false);
+      window.location.reload(); // Hard reload just to update the header
     }
   };
 
