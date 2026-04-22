@@ -66,16 +66,33 @@ export default function PostView() {
             ﴿ {post.verse} ﴾
           </h1>
           <div className="flex items-center justify-center gap-[15px] text-[14px] text-gray-500">
-            <div className="flex items-center gap-[10px]">
-              {finalAuthorAvatar ? (
-                <img src={finalAuthorAvatar} alt={finalAuthorName} className="w-[30px] h-[30px] rounded-full object-cover" />
-              ) : (
-                <div className="w-[30px] h-[30px] rounded-full bg-[#ddd] flex items-center justify-center text-[12px] font-bold text-gray-600">
-                  {finalAuthorName?.charAt(0) || 'U'}
-                </div>
-              )}
-              <span className="font-medium text-[var(--color-primary-app)]">{finalAuthorName}</span>
-            </div>
+            {post.authorId && authorsMap.has(post.authorId) ? (
+              <Link 
+                to={`/?authorId=${authorsMap.get(post.authorId)?.shortId}`} 
+                className="flex items-center gap-[10px] hover:bg-gray-50 px-2 py-1 rounded transition-colors cursor-pointer"
+                title={`عرض جميع تدوينات ${finalAuthorName}`}
+              >
+                {finalAuthorAvatar ? (
+                  <img src={finalAuthorAvatar} alt={finalAuthorName} className="w-[30px] h-[30px] rounded-full object-cover" />
+                ) : (
+                  <div className="w-[30px] h-[30px] rounded-full bg-[#ddd] flex items-center justify-center text-[12px] font-bold text-gray-600">
+                    {finalAuthorName?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <span className="font-medium text-[var(--color-primary-app)] underline decoration-transparent hover:decoration-[var(--color-primary-app)] transition-all">{finalAuthorName}</span>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-[10px]">
+                {finalAuthorAvatar ? (
+                  <img src={finalAuthorAvatar} alt={finalAuthorName} className="w-[30px] h-[30px] rounded-full object-cover" />
+                ) : (
+                  <div className="w-[30px] h-[30px] rounded-full bg-[#ddd] flex items-center justify-center text-[12px] font-bold text-gray-600">
+                    {finalAuthorName?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <span className="font-medium text-[var(--color-primary-app)]">{finalAuthorName}</span>
+              </div>
+            )}
             <span>•</span>
             {post.createdAt && (
               <time className="text-[14px] text-[#999]">{format(post.createdAt.toDate(), 'd MMMM yyyy', { locale: ar })}</time>
