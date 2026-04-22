@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { updateProfile, User } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -86,9 +86,9 @@ export default function Profile({ user, isAllowed }: { user: User | null, isAllo
     setSavingName(true);
     try {
       await updateProfile(user, { displayName: newName });
-      await setDoc(doc(db, 'authors', user.uid), {
+      await updateDoc(doc(db, 'authors', user.uid), {
         displayName: newName
-      }, { merge: true });
+      });
       window.location.reload(); 
     } catch (error) {
       console.error(error);
