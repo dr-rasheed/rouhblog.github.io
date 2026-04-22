@@ -1,5 +1,17 @@
 {
   "entities": {
+    "Author": {
+      "title": "Author",
+      "description": "An author's public profile data linked by uid",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "shortId": { "type": "number" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "shortId", "displayName"]
+    },
     "User": {
       "title": "User",
       "description": "A registered author for the Tadabbur blog.",
@@ -36,6 +48,10 @@
     }
   },
   "firestore": {
+    "/authors/{authorId}": {
+      "schema": { "$ref": "#/entities/Author" },
+      "description": "Public author profiles including a short ID for cleaner URLs."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "User profiles. Only allowed authors can create their profile."

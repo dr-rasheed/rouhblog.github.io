@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useAuthors } from '../contexts/AuthorsContext';
 
 interface Post {
   id: string;
@@ -14,12 +15,14 @@ interface Post {
   category: string;
   tags: string[];
   createdAt: any;
+  authorId?: string;
 }
 
 export default function PostView() {
   const { id } = useParams();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const { authorsMap } = useAuthors();
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -45,6 +48,9 @@ export default function PostView() {
   
   if (!post) return <div className="text-center py-20 text-red-500">التدوينة غير موجودة.</div>;
 
+  const finalAuthorName = (post.authorId && authorsMap.get(post.authorId)?.displayName) || post.authorName || 'الكاتب';
+  const finalAuthorAvatar = (post.authorId && authorsMap.get(post.authorId)?.photoURL) || post.authorAvatar;
+
   return (
     <div className="flex flex-col gap-[20px]">
       <Link to="/" className="inline-flex items-center text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors text-[14px]">
@@ -61,14 +67,14 @@ export default function PostView() {
           </h1>
           <div className="flex items-center justify-center gap-[15px] text-[14px] text-gray-500">
             <div className="flex items-center gap-[10px]">
-              {post.authorAvatar ? (
-                <img src={post.authorAvatar} alt={post.authorName} className="w-[30px] h-[30px] rounded-full object-cover" />
+              {finalAuthorAvatar ? (
+                <img src={finalAuthorAvatar} alt={finalAuthorName} className="w-[30px] h-[30px] rounded-full object-cover" />
               ) : (
                 <div className="w-[30px] h-[30px] rounded-full bg-[#ddd] flex items-center justify-center text-[12px] font-bold text-gray-600">
-                  {post.authorName.charAt(0)}
+                  {finalAuthorName?.charAt(0) || 'U'}
                 </div>
               )}
-              <span className="font-medium text-[var(--color-primary-app)]">{post.authorName}</span>
+              <span className="font-medium text-[var(--color-primary-app)]">{finalAuthorName}</span>
             </div>
             <span>•</span>
             {post.createdAt && (

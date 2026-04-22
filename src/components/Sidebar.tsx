@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuthors } from '../contexts/AuthorsContext';
 
 interface SidebarProps {
   isAllowed: boolean;
@@ -9,36 +10,24 @@ interface SidebarProps {
 
 export default function Sidebar({ isAllowed }: SidebarProps) {
   const navigate = useNavigate();
-  const [authors, setAuthors] = useState<Map<string, string>>(new Map());
+  const { authorsMap } = useAuthors();
   const [categories, setCategories] = useState<string[]>(['تدبر آية', 'لطائف لغوية', 'أسباب النزول', 'مقاصد السور']);
   const [tags, setTags] = useState<string[]>(['السكينة', 'تأملات', 'القرآن', 'لغة', 'إعجاز']);
   
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
     const unsubscribe = onSnapshot(q, (snap) => {
-      const auths = new Map<string, string>();
       const tgs = new Set<string>();
       const cats = new Set<string>();
       
       snap.forEach(doc => {
         const data = doc.data();
-        if (data.authorId && data.authorName) {
-          if (!auths.has(data.authorId)) {
-            auths.set(data.authorId, data.authorName);
-          }
-        } else if (data.authorName && !data.authorId) {
-           // Fallback for extremely old posts without authorId
-           if (!auths.has(data.authorName)) {
-             auths.set(data.authorName, data.authorName);
-           }
-        }
         if (data.category) cats.add(data.category);
         if (data.tags && Array.isArray(data.tags)) {
           data.tags.forEach((t: string) => tgs.add(t));
         }
       });
       
-      setAuthors(auths);
       if (cats.size > 0) setCategories(Array.from(cats));
       if (tgs.size > 0) setTags(Array.from(tgs).slice(0, 15));
     }, (error) => {
@@ -71,17 +60,18 @@ export default function Sidebar({ isAllowed }: SidebarProps) {
         </ul>
       </div>
       
-      {authors.size > 0 && (
+      {authorsMap.size > 0 && (
         <div className="flex flex-col">
           <h3 className="text-[13px] uppercase tracking-[1px] text-[var(--color-accent-app)] mb-[15px] border-b border-[var(--color-border-app)] pb-[5px]">الكُتّاب المعتمدين</h3>
           <ul className="list-none flex flex-col">
-            {Array.from(authors.entries()).map(([id, name], i) => (
+            {Array.from(authorsMap.values()).map((author, i) => (
               <li 
                 key={i} 
-                onClick={() => handleFilter('authorId', id)}
+                onClick={() => handleFilter('authorId', author.shortId.toString())}
                 className="py-[8px] text-[15px] cursor-pointer text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors"
+                title={`رابط معرّف الكاتب: ${author.shortId}`}
               >
-                {name}
+                {author.displayName}
               </li>
             ))}
           </ul>

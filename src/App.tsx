@@ -6,8 +6,9 @@
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User, updateProfile } from 'firebase/auth';
+import { db, auth, signIn, logOut, ALLOWED_EMAILS } from './lib/firebase';
+import { useAuthors } from './contexts/AuthorsContext';
 import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
-import { auth, signIn, logOut, ALLOWED_EMAILS, db } from './lib/firebase';
 
 import Home from './pages/Home';
 import Write from './pages/Write';
@@ -21,11 +22,14 @@ export default function App() {
   const [isAllowed, setIsAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { ensureAuthorProfile } = useAuthors();
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser && currentUser.email) {
         setIsAllowed(ALLOWED_EMAILS.includes(currentUser.email));
+        await ensureAuthorProfile(currentUser);
       } else {
         setIsAllowed(false);
       }
