@@ -55,11 +55,22 @@ export default function PostView({ user }: { user: User | null }) {
 
   return (
     <div className="flex flex-col gap-[20px]">
-      <Link to="/" className="inline-flex items-center text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors text-[14px]">
-        العودة للرئيسية
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link to="/" className="inline-flex items-center text-[var(--color-primary-app)] hover:text-[var(--color-accent-app)] transition-colors text-[14px]">
+          العودة للرئيسية
+        </Link>
+      </div>
       
-      <article className="bg-white border border-[var(--color-border-app)] rounded-[8px] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+      <article className="bg-white border border-[var(--color-border-app)] rounded-[8px] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.02)] relative">
+        {user && user.uid === post.authorId && (
+          <Link
+            to={`/edit/${post.id}`}
+            className="absolute top-[20px] left-[20px] bg-white border border-[var(--color-border-app)] px-[12px] py-[6px] rounded-[6px] text-gray-600 hover:text-[var(--color-accent-app)] hover:border-[var(--color-accent-app)] transition-colors shadow-sm text-[14px] font-bold flex items-center gap-[6px]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+            <span>تعديل</span>
+          </Link>
+        )}
         <div className="p-[40px] border-b border-[var(--color-border-app)] text-center flex flex-col items-center">
           <span className="text-[13px] text-[var(--color-accent-app)] uppercase tracking-[1px] border-b border-[var(--color-border-app)] pb-[4px] mb-[20px]">
             {post.category}
