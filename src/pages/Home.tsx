@@ -38,7 +38,7 @@ export default function Home() {
       setAllPosts(fetchedPosts);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching posts:", error);
+      console.error("Home posts listener Error:", error);
       setLoading(false);
     });
 
@@ -56,7 +56,7 @@ export default function Home() {
     if (authorIdFilter) {
        const targetAuthor = authorsByShortId.get(Number(authorIdFilter)) || Array.from(authorsMap.values()).find(a => a.shortId.toString() === authorIdFilter);
        if (targetAuthor) {
-          p = p.filter(x => x.authorId === targetAuthor.uid);
+          p = p.filter(x => x.authorId === targetAuthor.uid || (!x.authorId && x.authorName === targetAuthor.displayName));
        }
     }
     if (catFilter) p = p.filter(x => x.category === catFilter);
