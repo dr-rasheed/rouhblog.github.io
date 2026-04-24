@@ -5,6 +5,8 @@ import { db } from '../lib/firebase';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useAuthors } from '../contexts/AuthorsContext';
+import Comments from '../components/Comments';
+import { User } from 'firebase/auth';
 
 interface Post {
   id: string;
@@ -18,7 +20,7 @@ interface Post {
   authorId?: string;
 }
 
-export default function PostView() {
+export default function PostView({ user }: { user: User | null }) {
   const { id } = useParams();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +114,8 @@ export default function PostView() {
               ))}
             </div>
           )}
+
+          <Comments postId={post.id} user={user} postAuthorId={post.authorId} />
         </div>
       </article>
     </div>

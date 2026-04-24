@@ -14,11 +14,9 @@ service cloud.firestore {
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     
-    // Valid Writers - Update this array with the 10 emails!
-    // Or check against an allowed_authors collection. For simplicity, we check email presence.
     function isAllowedWriter() {
-      return isVerified(); // For MVP, we just check verified. I will add a comment.
-      // return isVerified() && request.auth.token.email in ['author1@example.com', 'author2@example.com'];
+      let authorSnap = get(/databases/$(database)/documents/authors/$(request.auth.uid));
+      return isVerified() && authorSnap != null && authorSnap.data.get('isWriter', false) == true;
     }
 
     // Validation: Author
@@ -27,23 +25,24 @@ service cloud.firestore {
              data.get('uid', request.auth.uid) is string && data.get('uid', request.auth.uid) == request.auth.uid &&
              (data.get('shortId', 0) is number) &&
              data.displayName is string && data.displayName.size() <= 100 &&
-             (data.get('photoURL', '') is string);
+             (data.get('photoURL', '') is string) &&
+             (data.get('isWriter', false) is bool);
     }
 
     // Authors Collection
     match /authors/{authorId} {
       allow read: if true;
       
-      allow create: if isAllowedWriter() &&
+      allow create: if isVerified() &&
                    request.auth.uid == authorId &&
                    isValidAuthor(incoming());
                    
-      allow update: if isAllowedWriter() &&
+      allow update: if isVerified() &&
                    request.auth.uid == authorId &&
                    isValidAuthor(incoming()) &&
-                   incoming().uid == existing().uid &&
-                   incoming().shortId == existing().shortId &&
-                   incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']);
+                   incoming().get('uid', existing().uid) == existing().uid &&
+                   incoming().get('shortId', existing().shortId) == existing().shortId &&
+                   incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'isWriter']);
     }
 
     // Validation: User
@@ -63,13 +62,13 @@ service cloud.firestore {
       allow read: if true;
       
       // Only the user themselves can create/update their profile
-      allow create: if isAllowedWriter() &&
+      allow create: if isVerified() &&
                    request.auth.uid == userId &&
                    isValidUser(incoming()) &&
                    incoming().createdAt == request.time &&
                    incoming().updatedAt == request.time;
                    
-      allow update: if isAllowedWriter() &&
+      allow update: if isVerified() &&
                    request.auth.uid == userId &&
                    isValidUser(incoming()) &&
                    incoming().email == existing().email &&
@@ -114,6 +113,27 @@ service cloud.firestore {
                    
       allow delete: if isAllowedWriter() &&
                    existing().authorId == request.auth.uid;
+                   
+      // Comments Collection (subcollection of posts)
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isVerified() &&
+                     isValidId(commentId) &&
+                     incoming().keys().hasAll(['authorId', 'authorName', 'content', 'createdAt']) &&
+                     incoming().authorId == request.auth.uid &&
+                     incoming().authorName is string && incoming().authorName.size() <= 100 &&
+                     (incoming().get('authorAvatar', '') is string) &&
+                     incoming().content is string && incoming().content.size() > 0 && incoming().content.size() <= 5000 &&
+                     incoming().createdAt == request.time;
+        allow update: if isVerified() &&
+                     existing().authorId == request.auth.uid &&
+                     incoming().authorId == existing().authorId &&
+                     incoming().authorName is string &&
+                     incoming().content is string && incoming().content.size() > 0 && incoming().content.size() <= 5000 &&
+                     incoming().createdAt == existing().createdAt &&
+                     incoming().diff(existing()).affectedKeys().hasOnly(['content', 'authorName', 'authorAvatar']);
+        allow delete: if isVerified() && (existing().authorId == request.auth.uid || get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid);
+      }
     }
   }
 }

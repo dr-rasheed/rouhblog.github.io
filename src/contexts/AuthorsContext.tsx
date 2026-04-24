@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { User } from 'firebase/auth';
 
@@ -8,6 +8,7 @@ export interface AuthorProfile {
   shortId: number;
   displayName: string;
   photoURL: string;
+  isWriter?: boolean;
 }
 
 interface AuthorsContextType {
@@ -48,14 +49,26 @@ export function AuthorsProvider({ children }: { children: React.ReactNode }) {
     const ref = doc(db, 'authors', user.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
+      // Check existing writers
+      const authorsQuery = await getDocs(collection(db, 'authors'));
+      const writersCount = authorsQuery.docs.filter(d => d.data().isWriter === true || d.data().isWriter === undefined).length;
+      const isWriter = writersCount < 6;
+
       // Create profile with a random 4 digit simple number for URL sharing
       let shortId = Math.floor(Math.random() * 9000) + 1000;
       await setDoc(ref, {
         uid: user.uid,
         shortId,
         displayName: user.displayName || user.email?.split('@')[0] || 'كاتب',
-        photoURL: user.photoURL || ''
+        photoURL: user.photoURL || '',
+        isWriter
       });
+    } else {
+      // Backward compatibility: If the field is missing, you can treat them as a writer if < 6 or just leave it.
+      // Easiest is to set it now if it's undefined and they are the owner
+      if (snap.data().isWriter === undefined) {
+         await setDoc(ref, { isWriter: true }, { merge: true });
+      }
     }
   };
 

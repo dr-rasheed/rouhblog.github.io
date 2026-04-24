@@ -25,21 +25,31 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { ensureAuthorProfile } = useAuthors();
+  const { ensureAuthorProfile, authorsMap } = useAuthors();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser && currentUser.email) {
-        setIsAllowed(ALLOWED_EMAILS.includes(currentUser.email));
         await ensureAuthorProfile(currentUser);
-      } else {
-        setIsAllowed(false);
       }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (user && authorsMap.has(user.uid)) {
+      const author = authorsMap.get(user.uid);
+      // Fallback: If isWriter is somehow undefined (old accounts), treat them as writers based on the 6 limit or just allow
+      setIsAllowed(author?.isWriter === true || author?.isWriter === undefined);
+    } else if (user && ALLOWED_EMAILS.includes(user.email || '')) {
+      // Fallback for immediate load
+      setIsAllowed(true);
+    } else {
+      setIsAllowed(false);
+    }
+  }, [user, authorsMap]);
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center text-xl">جاري التحميل...</div>;
 
@@ -127,7 +137,7 @@ export default function App() {
           <main className="flex-1 p-4 md:p-[40px] flex flex-col gap-[20px] bg-[var(--color-bg-base)] overflow-y-auto">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/post/:id" element={<PostView />} />
+              <Route path="/post/:id" element={<PostView user={user} />} />
               <Route path="/write" element={<Write user={user} isAllowed={isAllowed} />} />
               <Route path="/edit/:id" element={<EditPost user={user} isAllowed={isAllowed} />} />
               <Route path="/profile" element={<Profile user={user} isAllowed={isAllowed} />} />
