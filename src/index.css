@@ -17,7 +17,29 @@ body {
   direction: rtl; /* RTL for Arabic */
 }
 
-/* React Quill styling overrides for new theme */
+/* TipTap basic overrides */
+.prose ul {
+  list-style-type: disc;
+  padding-right: 20px; /* Right for RTL */
+}
+
+.prose ol {
+  list-style-type: decimal;
+  padding-right: 20px; /* Right for RTL */
+}
+
+.prose blockquote {
+  border-right: 4px solid var(--color-accent-app);
+  padding-right: 15px;
+  margin: 15px 0;
+  font-style: italic;
+  color: #555;
+}
+
+.prose p {
+  margin-bottom: 0.5em;
+}
+
 .quill {
   direction: rtl;
   text-align: right;

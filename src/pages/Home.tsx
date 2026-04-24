@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { RefreshCw } from 'lucide-react';
 import { useAuthors } from '../contexts/AuthorsContext';
 
 interface Post {
@@ -22,6 +23,7 @@ export default function Home() {
   const { authorsMap, authorsByShortId } = useAuthors();
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   
   const authorIdFilter = searchParams.get('authorId'); // Now acts as shortId essentially when from sidebar
@@ -29,6 +31,8 @@ export default function Home() {
   const tagFilter = searchParams.get('tag');
 
   useEffect(() => {
+    setLoading(true);
+    // Remove onSnapshot and use getDocs or use the same onSnapshot but re-triggered by refreshKey
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedPosts: Post[] = [];
@@ -43,7 +47,7 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [refreshKey]);
 
   const displayAuthorName = useMemo(() => {
     if (!authorIdFilter) return null;
@@ -76,6 +80,18 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-[20px]">
+      <div className="flex items-center justify-between">
+        <h1 className="text-[24px] font-bold text-[var(--color-primary-app)]"></h1>
+        <button 
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-[8px] bg-white border border-[var(--color-border-app)] px-[12px] py-[8px] rounded-[6px] text-gray-600 hover:text-[var(--color-accent-app)] hover:border-[var(--color-accent-app)] transition-colors shadow-sm text-[14px] font-bold"
+          title="تحديث قسري"
+        >
+          <RefreshCw size={16} />
+          <span>تحديث المقالات</span>
+        </button>
+      </div>
+
       {hasFilters && (
         <div className="bg-white border border-[var(--color-border-app)] p-[15px] rounded-[8px] flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-[10px] text-[15px]">

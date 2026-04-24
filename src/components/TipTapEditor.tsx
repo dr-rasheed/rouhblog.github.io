@@ -10,9 +10,10 @@ interface TipTapEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  minHeightClass?: string;
 }
 
-export default function TipTapEditor({ value, onChange, placeholder }: TipTapEditorProps) {
+export default function TipTapEditor({ value, onChange, placeholder, minHeightClass = 'min-h-[300px]' }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -34,7 +35,7 @@ export default function TipTapEditor({ value, onChange, placeholder }: TipTapEdi
     },
     editorProps: {
       attributes: {
-        class: 'prose mx-auto focus:outline-none min-h-[300px] w-full max-w-none',
+        class: `prose mx-auto focus:outline-none w-full max-w-none ${minHeightClass}`,
         dir: 'rtl'
       },
     },

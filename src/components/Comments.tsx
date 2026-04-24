@@ -4,6 +4,7 @@ import { db, auth } from "../lib/firebase";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useAuthors } from "../contexts/AuthorsContext";
+import TipTapEditor from "./TipTapEditor";
 import { User } from "firebase/auth";
 
 interface Comment {
@@ -112,7 +113,10 @@ export default function Comments({ postId, user, postAuthorId }: { postId: strin
                     </button>
                 )}
              </div>
-             <p className="text-[14px] leading-relaxed text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+             <div 
+               className="text-[14px] leading-relaxed text-gray-700 prose max-w-none" 
+               dangerouslySetInnerHTML={{ __html: comment.content }}
+             />
           </div>
         ))}
 
@@ -123,18 +127,16 @@ export default function Comments({ postId, user, postAuthorId }: { postId: strin
 
       {user ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <textarea
+          <TipTapEditor
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={(val) => setNewComment(val)}
             placeholder="أضف تعليقاً يثري التدبر..."
-            className="w-full px-4 py-3 border border-gray-200 rounded-[8px] outline-none focus:border-[var(--color-accent-app)] focus:ring-1 focus:ring-[var(--color-accent-app)] min-h-[100px] text-[14px] resize-y"
-            required
-            maxLength={5000}
+            minHeightClass="min-h-[100px]"
           />
           <button 
             type="submit" 
-            disabled={submitting || !newComment.trim()}
-            className="bg-[var(--color-accent-app)] text-white px-6 py-2 rounded-[6px] font-bold text-[14px] self-end hover:bg-opacity-90 transition-colors disabled:opacity-50"
+            disabled={submitting || !newComment.trim() || newComment === '<p></p>'}
+            className="bg-[var(--color-accent-app)] text-white px-6 py-2 rounded-[6px] font-bold text-[14px] self-end hover:bg-opacity-90 transition-colors disabled:opacity-50 mt-2"
           >
             {submitting ? 'جاري الإرسال...' : 'إرسال التعليق'}
           </button>
