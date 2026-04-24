@@ -32,6 +32,7 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
+    setAllPosts([]); // Clear to show loading state
     // Remove onSnapshot and use getDocs or use the same onSnapshot but re-triggered by refreshKey
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -83,11 +84,11 @@ export default function Home() {
       <div className="flex items-center justify-between">
         <h1 className="text-[24px] font-bold text-[var(--color-primary-app)]"></h1>
         <button 
-          onClick={() => window.location.reload()}
+          onClick={() => setRefreshKey(prev => prev + 1)}
           className="flex items-center gap-[8px] bg-white border border-[var(--color-border-app)] px-[12px] py-[8px] rounded-[6px] text-gray-600 hover:text-[var(--color-accent-app)] hover:border-[var(--color-accent-app)] transition-colors shadow-sm text-[14px] font-bold"
           title="تحديث قسري"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={16} className={loading && allPosts.length === 0 ? "animate-spin" : ""} />
           <span>تحديث المقالات</span>
         </button>
       </div>
